@@ -7,7 +7,7 @@
 		"context": "..",
 		"args": { 
 			// Update 'VARIANT' to pick a Python version: 3, 3.6, 3.7, 3.8, 3.9
-			"VARIANT": "3",
+			"VARIANT": "3.7",
 			// Options
 			"INSTALL_NODE": "true",
 			"NODE_VERSION": "lts/*"
@@ -28,19 +28,27 @@
 		"python.linting.mypyPath": "/usr/local/py-utils/bin/mypy",
 		"python.linting.pycodestylePath": "/usr/local/py-utils/bin/pycodestyle",
 		"python.linting.pydocstylePath": "/usr/local/py-utils/bin/pydocstyle",
-		"python.linting.pylintPath": "/usr/local/py-utils/bin/pylint"
+		"python.linting.pylintPath": "/usr/local/py-utils/bin/pylint",
+		"python.linting.pylintArgs": [
+			"--disable","W0311,W0612,W0621,C0111,C0103",
+			"--indent-string=\"  \"",
+			"--indent-after-paren=\"  \"",
+			"--extension-pkg-whitelist", "numpy",
+			"--generated-members","torch.*"
+		]
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
-		"ms-python.python"
+		"ms-python.python",
+		"donjayamanne.python-extension-pack"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "pip3 install --user -r /workspaces/StudyML/requirements.txt",
+	"postCreateCommand": "pip3 install --user -r requirements.txt",
 
 	// Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
 	"remoteUser": "vscode"
