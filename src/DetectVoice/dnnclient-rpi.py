@@ -14,6 +14,8 @@ num_output = 2004
 num_context = 11 # 1320 / 120
 batchsize = 32
 
+dictationkit_path = "../../../dictation-kit/"
+
 w_filename = ["dnn_sample/W_l1.npy", "dnn_sample/W_l2.npy", "dnn_sample/W_l3.npy", "dnn_sample/W_l4.npy", "dnn_sample/W_l5.npy", "dnn_sample/W_l6.npy", "dnn_sample/W_l7.npy", "dnn_sample/W_output.npy"]
 b_filename = ["dnn_sample/bias_l1.npy", "dnn_sample/bias_l2.npy", "dnn_sample/bias_l3.npy", "dnn_sample/bias_l4.npy", "dnn_sample/bias_l5.npy", "dnn_sample/bias_l6.npy", "dnn_sample/bias_l7.npy", "dnn_sample/bias_output.npy"]
 
@@ -34,13 +36,13 @@ if len(sys.argv) > 1:
         elif linebuf[0] == "--num_output":num_output = int(linebuf[1])
         elif linebuf[0] == "--num_context":num_context = int(linebuf[1])
         elif linebuf[0] == "--batchsize":batchsize = int(linebuf[1])
-        elif linebuf[0] == "--prior_filename":prior_filename = linebuf[1]
+        elif linebuf[0] == "--prior_filename":prior_filename = dictationkit_path + linebuf[1]
         elif linebuf[0] == "--w_filename":
             for i in range(1, len(linebuf)):
-                w_filename[i - 1] = linebuf[i]
+                w_filename[i - 1] = dictationkit_path + linebuf[i]
         elif linebuf[0] == "--b_filename":
             for i in range(1, len(linebuf)):
-                b_filename[i - 1] = linebuf[i]
+                b_filename[i - 1] = dictationkit_path + linebuf[i]
         elif linebuf[0] == "#":
             pass
         else:
