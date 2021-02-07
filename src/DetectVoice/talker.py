@@ -3,7 +3,7 @@ import socket
 import struct
 
 talkserver_host = 'localhost'
-talkserver_port = 5532
+talkserver_port = 5533
 
 talkserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 talkserversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -18,12 +18,14 @@ fnum = 0
 while True:
 
     rcvmsg = talkclientsock.recv(4)
-    nbytes = struct.unpack('=i', rcvmsg)[0]
+    #nbytes = struct.unpack('=i', rcvmsg)[0]
 
-    if nbytes > 0:
-        print(format("nbytes={}, rcvmsg={} ", nbytes, rcvmsg))
+    if len(rcvmsg)>0:
+        #print(format("nbytes={}, rcvmsg={} ", nbytes, rcvmsg))
+        #print(format("rcvmsg={} ", str(rcvmsg)))
+        print(rcvmsg)
         fnum = fnum + 1
-    elif nbytes == 0:
+    elif len(rcvmsg) == 0:
         fnum = 0
 
 talkclientsock.close()

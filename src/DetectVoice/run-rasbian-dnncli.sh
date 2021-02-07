@@ -8,8 +8,8 @@ dictationkit_path=../../../dictation-kit
 
 #python3 ./talker.py &
 #sleep 3
-python3 ./listener.py dnnclient.conf &
-sleep 5
+#python3 ./listener.py dnnclient.conf &
+#sleep 5
 adintool -in mic -out vecnet -server 127.0.0.1 -paramtype FBANK_D_A_Z -veclen 120 -htkconf $dictationkit_path/model/dnn/config.lmfb -port 5532 -cvn -cmnload $dictationkit_path/model/dnn/norm -cmnnoupdate
 
 kill 0

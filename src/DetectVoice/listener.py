@@ -119,16 +119,20 @@ while True:
     nbytes = struct.unpack('=i', rcvmsg)[0]
 
     if nbytes == 12:
-
+        #talkersock.sendall(b'go')
+        #print("send to talker.")
         rcvmsg = adinclientsock.recv(12)
         fbank_vecdim, fbank_shift, fbank_outprob_p = struct.unpack('=iii', rcvmsg)
         c_msg = struct.pack('=iiii', 12, num_output, 10, 1)
+        print("send julius0")
         juliusclientsock.sendall(c_msg)
         sendconf = 1
 
     elif nbytes == num_raw * 4:
 
         #rcvmsg = adinclientsock.recv(nbytes, socket.MSG_WAITALL)
+        #talkersock.sendall(b'go')
+        #print("send to talker.")
 
         buffer = b''
         # print(type(buffer))
@@ -141,18 +145,21 @@ while True:
             buffer += tmpdata
 
         rcvmsg = buffer
+        #print(buffer)
 
         val = struct.unpack("=" + "f" * num_raw, rcvmsg)
         splice_feature = np.r_[splice_feature[num_raw:num_input], val]
         if fnum >= num_context:
+            #talkersock.sendall(b'go')
+            #print("send to talker 0.")
             if buf_splice_feature is not None:
                 buf_splice_feature = np.hstack((buf_splice_feature, splice_feature[:, np.newaxis]))
             else:
                 buf_splice_feature = splice_feature[:, np.newaxis]
 
         if buf_splice_feature is not None and buf_splice_feature.shape[1] == batchsize:
-            ret_talkersend = talkersock.sendmsg("go")
-            print(format("ret_talkersend={}",ret_talkersend))
+            talkersock.sendall(b'go')
+            print("send to talker 1.")
             xo = ff(buf_splice_feature)
             for i in range(xo.shape[1]):
                 r_feature = xo[:, i]
@@ -160,14 +167,17 @@ while True:
                 juliusclientsock.sendall(r_msg)
                 r_msg = struct.pack("=" + "f" * num_output, *r_feature)
                 juliusclientsock.sendall(r_msg)
+                print("send julius1")
 
             buf_splice_feature = None
         fnum = fnum + 1
 
     elif nbytes == 0:
-
+        #talkersock.sendall(b'go')
+        #print("send to talker.")
         if buf_splice_feature is not None:
-            talkersock.sendmsg()
+            talkersock.sendall(b'go')
+            print("send to talker 2.")
             xo = ff(buf_splice_feature)
             for i in range(xo.shape[1]):
                 r_feature = xo[:, i]
@@ -175,9 +185,11 @@ while True:
                 juliusclientsock.sendall(r_msg)
                 r_msg = struct.pack("=" + "f" * num_output, *r_feature)
                 juliusclientsock.sendall(r_msg)
+                print("send julius2")
 
         r_msg = struct.pack('=i', 0)
         juliusclientsock.sendall(r_msg)
+        print("send julius3")
         splice_feature = np.zeros(num_input)
         buf_splice_feature = None
         fnum = 0
