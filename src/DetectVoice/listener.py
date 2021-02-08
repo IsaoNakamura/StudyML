@@ -2,6 +2,9 @@ import sys
 import numpy as np
 import socket
 import struct
+import random
+
+reactions = ("はい？","うんうん","へー","ほう","なるほど","そうだねえ","そうなんだ")
 
 talker_host =  'localhost'
 talker_port = 5533
@@ -98,11 +101,12 @@ adinserversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 adinserversock.bind((adinserver_host, adinserver_port))
 adinserversock.listen(1)
 
-juliusclientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-juliusclientsock.connect((julius_host, julius_port))
 
 talkersock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 talkersock.connect((talker_host, talker_port))
+
+juliusclientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+juliusclientsock.connect((julius_host, julius_port))
 
 sendconf = 0
 
@@ -113,10 +117,15 @@ splice_feature = np.zeros(num_input)
 buf_splice_feature = None
 fnum = 0
 is_session_julius = False
+is_wait = False
 while True:
-
+    if is_wait:
+        print("wait message from adinserver.")
     rcvmsg = adinclientsock.recv(4)
     nbytes = struct.unpack('=i', rcvmsg)[0]
+    if is_wait:
+        print("recieve message from adinserver.")
+        is_wait = False
 
     if nbytes == 12:
         rcvmsg = adinclientsock.recv(12)
@@ -130,8 +139,10 @@ while True:
         buffer = b''
         while len(buffer) < nbytes:
             # tmpdata = str(adinclientsock.recv(nbytes - len(buffer)).decode('utf-8'))
+            # print("buffer length is {}".format(len(buffer)))
             tmpdata = adinclientsock.recv( nbytes - len(buffer) )
             if not tmpdata:
+                # print(" #RECIEVE break")
                 break
             buffer += tmpdata
 
@@ -141,15 +152,25 @@ while True:
         val = struct.unpack("=" + "f" * num_raw, rcvmsg)
         splice_feature = np.r_[splice_feature[num_raw:num_input], val]
         if fnum >= num_context:
+            
             if buf_splice_feature is not None:
                 buf_splice_feature = np.hstack((buf_splice_feature, splice_feature[:, np.newaxis]))
             else:
+                #print("fnum={} num_context={}".format(fnum, num_context))
                 buf_splice_feature = splice_feature[:, np.newaxis]
 
+
         if buf_splice_feature is not None and buf_splice_feature.shape[1] == batchsize:
-            if is_session_julius == False:
-                talkersock.sendall(b'beg')
-                is_session_julius = True
+            #if is_session_julius == False:
+                ## talkersock.sendall(b'beg')
+                #react_text = reactions[random.randint(0,reactions.count-1)]
+                #talkersock.send(react_text.encode("UTF-8"))
+                # is_session_julius = True
+            react_idx = random.randint(0,len(reactions)-1)
+            print("react_idx={}".format(react_idx))
+            react_text = reactions[react_idx]
+            talkersock.send(react_text.encode("UTF-8"))
+            
             print("  #BEG send to julius nbyte={}".format(nbytes))
             xo = ff(buf_splice_feature)
             for i in range(xo.shape[1]):
@@ -158,7 +179,9 @@ while True:
                 juliusclientsock.sendall(r_msg)
                 r_msg = struct.pack("=" + "f" * num_output, *r_feature)
                 juliusclientsock.sendall(r_msg)
+
             print("  #END send to julius nbyte={}".format(nbytes))
+
 
             buf_splice_feature = None
         fnum = fnum + 1
@@ -183,6 +206,9 @@ while True:
         buf_splice_feature = None
         fnum = 0
         is_session_julius = False
+        is_wait = True
+    elif len(rcvmsg) == 0:
+        print("  rcvmsg's length is 0.")
 
 
 r_msg = struct.pack('=i', 0)

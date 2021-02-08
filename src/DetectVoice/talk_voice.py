@@ -15,7 +15,6 @@ play_module = "aplay"
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.connect((host,port))
 
-data=""
 try:
     data = ""
     while True:
@@ -28,9 +27,8 @@ try:
                     recog_text = recog_text + line
             cmd1 = talk_module + " " + recog_text
             cmd2 = play_module
-            process1=subprocess.Popen(cmd1.split(),stdout=subprocess.PIPE)
-            process2=subprocess.Popen(cmd2.split(),stdin=process1.stdout)
-            #subprocess.call(cmd.split())
+            #process1=subprocess.Popen(cmd1.split(),stdout=subprocess.PIPE)
+            #process2=subprocess.Popen(cmd2.split(),stdin=process1.stdout)
             print(cmd1.split())
             data = ""
         else:
