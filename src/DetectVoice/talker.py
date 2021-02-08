@@ -23,7 +23,8 @@ while True:
     if len(rcvmsg)>0:
         #print(format("nbytes={}, rcvmsg={} ", nbytes, rcvmsg))
         #print(format("rcvmsg={} ", str(rcvmsg)))
-        print(rcvmsg)
+        #print(rcvmsg)
+        print("fnum={}, rcvmsg={} ".format(fnum, rcvmsg))
         fnum = fnum + 1
     elif len(rcvmsg) == 0:
         fnum = 0
