@@ -3,6 +3,7 @@ import socket
 import subprocess
 import threading
 import random
+import datetime
 
 reactions0 = ("はい？","うん？","なに？","はいよ","え？")
 reactions1 = ("うんうん","へー","ほう","なるほど","そうだねえ","そうなんだ")
@@ -12,6 +13,8 @@ play_module = "aplay"
 
 talkserver_host = 'localhost'
 talkserver_port = 5533
+
+date_format = '%Y/%m/%d %H:%M:%S'
 
 clients = []
 
@@ -28,6 +31,9 @@ def loop_handler(connection, address):
                     react_idx = random.randint(0,len(reactions0)-1)
                     print("recieve /reaction idx={}".format(react_idx))
                     talk_text = reactions0[react_idx]
+                elif( '/timekeeper' in rcvmsg):
+                    talk_text='うーんとね'
+                    pass
                 else:
                     talk_text = rcvmsg
                 
@@ -35,15 +41,22 @@ def loop_handler(connection, address):
                     cmd1 = talk_module + " " + talk_text
                     cmd2 = play_module
                     process1=subprocess.Popen(cmd1.split(),stdout=subprocess.PIPE)
-                    process2=subprocess.run(cmd2.split(),stdin=process1.stdout)
+                    process2=subprocess.Popen(cmd2.split(),stdin=process1.stdout)
+                    #process2=subprocess.run(cmd2.split(),stdin=process1.stdout)
                     print(cmd1.split())
 
-            #for value in clients:
-                #if value[1][0] == address[0] and value[1][1] == address[1] :
-                #    print("クライアント{}:{}から{}というメッセージを受信完了".format(value[1][0], value[1][1], res))
-                #else:
-                #    value[0].send("クライアント{}:{}から{}を受信".format(value[1][0], value[1][1], res.decode()).encode("UTF-8"))
-                #    pass
+                    for value in clients:
+                        if value[1][0] == address[0] and value[1][1] == address[1] :
+                            # 当該ループであるクライアントには発信しない
+                            #print("クライアント{}:{}から{}というメッセージを受信完了".format(value[1][0], value[1][1], rcvmsg))
+                            pass
+                        else:
+                            # 当該ループでないクライアントには発信する
+                            now = datetime.datetime.now()
+                            now_str = now.strftime(date_format)
+                            value[0].send(now_str.encode("UTF-8"))
+                            #value[0].send("クライアント{}:{}から{}を受信".format(value[1][0], value[1][1], rcvmsg.decode()).encode("UTF-8"))
+                            pass
     except Exception as e:
         print(e)
 
