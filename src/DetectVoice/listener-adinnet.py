@@ -1,5 +1,4 @@
 import sys
-import numpy as np
 import socket
 import struct
 
@@ -31,51 +30,54 @@ if len(sys.argv) > 1:
             sys.exit()
     f.close()   
 
-
-adinserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-adinserversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-adinserversock.bind((adinserver_host, adinserver_port))
-adinserversock.listen(1)
-
-
-talkersock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-talkersock.connect((talker_host, talker_port))
-
 juliusclientsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-juliusclientsock.connect((julius_host, julius_port))
+talkersock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+adinserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+try:
+    juliusclientsock.connect((julius_host, julius_port))
+    talkersock.connect((talker_host, talker_port))
 
-print('Waiting for connections...')
-adinclientsock, adinclient_address = adinserversock.accept()
-print('connected from client.')
+    adinserversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    adinserversock.bind((adinserver_host, adinserver_port))
+    adinserversock.listen(1)
+    print('Waiting for connections...')
+    adinclientsock, adinclient_address = adinserversock.accept()
+    print('connected from client.')
 
-while True:
-    rcvmsg = adinclientsock.recv(4)
-    nbytes = struct.unpack('=i', rcvmsg)[0]
-    #print("nbytes={}".format(nbytes))
-    juliusclientsock.sendall(rcvmsg)
-    if nbytes > 0:
-        buffer = b''
-        while len(buffer) < nbytes:
-            recv_byte = nbytes - len(buffer)
-            tmpdata = adinclientsock.recv( recv_byte )
-            if not tmpdata:
-                break
-            buffer += tmpdata
-            #print(" #recive. recv_byte={}, buffer_len={}".format(recv_byte,len(buffer)))
-        if len(buffer)>0 :
-            #print(" #send to julius. buffer length is {}".format(len(buffer)))
-            juliusclientsock.sendall(buffer)
-    elif nbytes == 0:
-        r_msg = struct.pack('=i', 0)
-        juliusclientsock.sendall(r_msg)
-        #print("#SPLIT R_MSG:{}".format(r_msg))
-        talkersock.send("/reaction".encode("UTF-8"))
+    while True:
+        rcvmsg = adinclientsock.recv(4)
+        nbytes = struct.unpack('=i', rcvmsg)[0]
+        #print("nbytes={}".format(nbytes))
+        juliusclientsock.sendall(rcvmsg)
+        if nbytes > 0:
+            buffer = b''
+            while len(buffer) < nbytes:
+                recv_byte = nbytes - len(buffer)
+                tmpdata = adinclientsock.recv( recv_byte )
+                if not tmpdata:
+                    break
+                buffer += tmpdata
+                #print(" #recive. recv_byte={}, buffer_len={}".format(recv_byte,len(buffer)))
+            if len(buffer)>0 :
+                #print(" #send to julius. buffer length is {}".format(len(buffer)))
+                juliusclientsock.sendall(buffer)
+        elif nbytes == 0:
+            r_msg = struct.pack('=i', 0)
+            juliusclientsock.sendall(r_msg)
+            #print("#SPLIT R_MSG:{}".format(r_msg))
+            talkersock.send("/reaction".encode("UTF-8"))
 
-r_msg = struct.pack('=i', 0)
-juliusclientsock.sendall(r_msg)
+    r_msg = struct.pack('=i', 0)
+    juliusclientsock.sendall(r_msg)
 
-r_msg = struct.pack('=i', -1)
-juliusclientsock.sendall(r_msg)
+    r_msg = struct.pack('=i', -1)
+    juliusclientsock.sendall(r_msg)
 
-adinclientsock.close()
+    adinclientsock.close()
+
+except KeyboardInterrupt:
+    print('finished')
+    juliusclientsock.close()
+    adinserversock.close()
+    talkersock.close()
