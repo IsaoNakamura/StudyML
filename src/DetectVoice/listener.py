@@ -114,7 +114,7 @@ splice_feature = np.zeros(num_input)
 buf_splice_feature = None
 fnum = 0
 is_session_julius = False
-is_wait = False
+is_wait = True
 while True:
     if is_wait:
         print("wait message from adinserver.")
@@ -162,9 +162,11 @@ while True:
                 is_session_julius = True            
             
             print("  #BEG send to julius nbyte={}".format(nbytes))
-            xo = ff(buf_splice_feature)
-            for i in range(xo.shape[1]):
-                r_feature = xo[:, i]
+            #xo = ff(buf_splice_feature)
+            #for i in range(xo.shape[1]):
+            #    r_feature = xo[:, i]
+            for i in range(buf_splice_feature.shape[1]):
+                r_feature = buf_splice_feature[:, i]
                 r_msg = struct.pack('=i', num_output * 4)
                 juliusclientsock.sendall(r_msg)
                 r_msg = struct.pack("=" + "f" * num_output, *r_feature)
@@ -179,9 +181,11 @@ while True:
     elif nbytes == 0:
         if buf_splice_feature is not None:
             print("  #BEG send to julius nbyte={}".format(nbytes))
-            xo = ff(buf_splice_feature)
-            for i in range(xo.shape[1]):
-                r_feature = xo[:, i]
+            #xo = ff(buf_splice_feature)
+            #for i in range(xo.shape[1]):
+            #    r_feature = xo[:, i]
+            for i in range(buf_splice_feature.shape[1]):
+                r_feature = buf_splice_feature[:, i]
                 r_msg = struct.pack('=i', num_output * 4)
                 juliusclientsock.sendall(r_msg)
                 r_msg = struct.pack("=" + "f" * num_output, *r_feature)
