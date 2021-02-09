@@ -2,9 +2,6 @@ import sys
 import numpy as np
 import socket
 import struct
-import random
-
-reactions = ("はい？","うんうん","へー","ほう","なるほど","そうだねえ","そうなんだ")
 
 talker_host =  'localhost'
 talker_port = 5533
@@ -159,17 +156,10 @@ while True:
                 #print("fnum={} num_context={}".format(fnum, num_context))
                 buf_splice_feature = splice_feature[:, np.newaxis]
 
-
         if buf_splice_feature is not None and buf_splice_feature.shape[1] == batchsize:
-            #if is_session_julius == False:
-                ## talkersock.sendall(b'beg')
-                #react_text = reactions[random.randint(0,reactions.count-1)]
-                #talkersock.send(react_text.encode("UTF-8"))
-                # is_session_julius = True
-            react_idx = random.randint(0,len(reactions)-1)
-            print("react_idx={}".format(react_idx))
-            react_text = reactions[react_idx]
-            talkersock.send(react_text.encode("UTF-8"))
+            if is_session_julius == False:
+                talkersock.send("/reaction".encode("UTF-8"))
+                is_session_julius = True            
             
             print("  #BEG send to julius nbyte={}".format(nbytes))
             xo = ff(buf_splice_feature)

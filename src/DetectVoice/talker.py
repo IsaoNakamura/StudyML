@@ -2,6 +2,10 @@ import sys
 import socket
 import subprocess
 import threading
+import random
+
+reactions0 = ("はい？","うん？","なに？","はいよ","え？")
+reactions1 = ("うんうん","へー","ほう","なるほど","そうだねえ","そうなんだ")
 
 talk_module = "../../../aquestalkpi/AquesTalkPi"
 play_module = "aplay"
@@ -13,16 +17,26 @@ clients = []
 
 # 接続済みクライアントは読み込みおよび書き込みを繰り返す
 def loop_handler(connection, address):
-    while True:
-        try:
+    try:
+        buffer = ''
+        while True:
             #クライアント側から受信する
-            res = connection.recv(4096)
-            talk_text = str(res.decode('utf-8'))    
-            cmd1 = talk_module + " " + talk_text
-            cmd2 = play_module
-            process1=subprocess.Popen(cmd1.split(),stdout=subprocess.PIPE)
-            process2=subprocess.Popen(cmd2.split(),stdin=process1.stdout)
-            print(cmd1.split())
+            rcvmsg = str(connection.recv(4096).decode('utf-8'))
+            if len(rcvmsg)>0:
+                talk_text=''
+                if( '/reaction' in rcvmsg):
+                    react_idx = random.randint(0,len(reactions0)-1)
+                    print("recieve /reaction idx={}".format(react_idx))
+                    talk_text = reactions0[react_idx]
+                else:
+                    talk_text = rcvmsg
+                
+                if( len(talk_text)>0):
+                    cmd1 = talk_module + " " + talk_text
+                    cmd2 = play_module
+                    process1=subprocess.Popen(cmd1.split(),stdout=subprocess.PIPE)
+                    process2=subprocess.run(cmd2.split(),stdin=process1.stdout)
+                    print(cmd1.split())
 
             #for value in clients:
                 #if value[1][0] == address[0] and value[1][1] == address[1] :
@@ -30,9 +44,8 @@ def loop_handler(connection, address):
                 #else:
                 #    value[0].send("クライアント{}:{}から{}を受信".format(value[1][0], value[1][1], res.decode()).encode("UTF-8"))
                 #    pass
-        except Exception as e:
-            print(e)
-            break
+    except Exception as e:
+        print(e)
 
 
 talkserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
