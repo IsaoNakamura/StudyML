@@ -15,19 +15,24 @@ interval_sec = 3
 
 rcvdate = [] # datetime.datetime.now()
 
-def Handler(sock):
+def recv_handler(sock):
     try:
         while True:
             rcvmsg = sock.recv(4096)
             if len(rcvmsg)>0:
                 rcvstr = str(rcvmsg.decode('utf-8'))
-                print("読み込んだバイト数:({})".format(len(rcvmsg)))
-                rcvdate.clear()
-                rcvdate.append(datetime.datetime.strptime(rcvstr, date_format))
-                print("rcvdate={}".format(rcvdate[0]))
+                if( '/cancel' in rcvstr):
+                    rcvdate.clear()
+                    print("recv from talker for cancel.")
+                    pass
+                else:
+                    #print("読み込んだバイト数:({})".format(len(rcvmsg)))
+                    rcvdate.clear()
+                    rcvdate.append(datetime.datetime.strptime(rcvstr, date_format))
+                    print("recv from talker for timekeep. rcvdate={}".format(rcvdate[0]))
 
-                if (len(rcvmsg) < 4096) :
-                    continue
+                    #if (len(rcvmsg) < 4096) :
+                    #    continue
     except Exception as e:
         print(e)
 
@@ -36,7 +41,7 @@ def Handler(sock):
 try:
     talkersock.connect((talker_host, talker_port))
 
-    thread = threading.Thread(target = Handler, args= (talkersock,), daemon= True)
+    thread = threading.Thread(target = recv_handler, args= (talkersock,), daemon= True)
     thread.start()
 
     #last = datetime.datetime.now()
@@ -51,9 +56,10 @@ try:
                 #rcvdate = now
                 #last = now
                 
-                print("rcvdate={} now={} delta={}".format(rcvdate,now_str,delta.seconds ))
                 #talkersock.send(now_str.encode("UTF-8"))
                 talkersock.send('/timekeeper'.encode("UTF-8"))
+                print("send msg to talker. rcv(from talker)={} now={} delta={}".format(rcvdate,now_str,delta.seconds ))
+                rcvdate.clear()
         time.sleep(1)
 
 except KeyboardInterrupt:
