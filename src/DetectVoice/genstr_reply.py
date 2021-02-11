@@ -28,7 +28,7 @@ try:
                     if index != -1:
                         line = line[index+6:line.find('"',index+6)]
                         recog_text = recog_text + line
-                print(recog_text)
+                print("send to talker for recognition. text={}".format(recog_text))
                 talkersock.send(recog_text.encode("UTF-8"))
                 buffer=''         
 

@@ -17,9 +17,9 @@ talkserver_port = 5533
 
 date_format = '%Y/%m/%d %H:%M:%S'
 
-reaction_talks = []
+detection_talks = []
 keeper_talks = []
-detect_talks = []
+recognition_talks = []
 
 clients = []
 
@@ -27,33 +27,33 @@ def talk_handler():
     try:
         while True:
             talk_text=''
-            if( len(detect_talks)>0):
-                talk_text = detect_talks.pop()
+            if( len(recognition_talks)>0):
+                talk_text = recognition_talks.pop()
                 
                 now = datetime.datetime.now()
                 now_str = now.strftime(date_format)
-                print("notification for detect. {}".format(now_str))
+                print("notification for recognition. {}".format(now_str))
                 for value in clients:
                     # クライアントに発信する
                     value[0].send("/cancel ".encode("UTF-8"))
                     pass
 
-                detect_talks.clear()
-                reaction_talks.clear()
+                recognition_talks.clear()
+                detection_talks.clear()
                 keeper_talks.clear()
 
-            if( len(reaction_talks)>0):
-                talk_text = reaction_talks.pop()
-
+            if( len(detection_talks)>0):
+                talk_text = detection_talks.pop()
+                
                 now = datetime.datetime.now()
                 now_str = now.strftime(date_format)
-                print("notification for reaction. {}".format(now_str))
+                print("notification for detection. {}".format(now_str))
                 for value in clients:
                     # クライアントに発信する
                     value[0].send(now_str.encode("UTF-8"))
                     pass
 
-                reaction_talks.clear()
+                detection_talks.clear()
                 keeper_talks.clear()
 
             if( len(keeper_talks)>0):
@@ -66,7 +66,7 @@ def talk_handler():
                     # クライアントに発信する
                     value[0].send(now_str.encode("UTF-8"))
                     pass
-                
+
                 keeper_talks.clear()
 
             if(len(talk_text)>0):
@@ -88,21 +88,20 @@ def client_handler(connection, address):
             #クライアント側から受信する
             rcvmsg = str(connection.recv(4096).decode('utf-8'))
             if len(rcvmsg)>0:
-                if( '/reaction' in rcvmsg):
+                if( '/detection' in rcvmsg):
                     react_idx = random.randint(0,len(reactions0)-1)
-                    print("recieve /reaction idx={}".format(react_idx))
-                    reaction_talks.clear()
-                    reaction_talks.append(reactions0[react_idx])
+                    print("recieve /detection idx={}".format(react_idx))
+                    detection_talks.clear()
+                    detection_talks.append(reactions0[react_idx])
                 elif( '/timekeeper' in rcvmsg):
-                    if(len(detect_talks)<=0):
-                        react_idx = random.randint(0,len(reactions1)-1)
-                        print("recieve /timekeeper idx={}".format(react_idx))
-                        keeper_talks.clear()
-                        keeper_talks.append(reactions1[react_idx])
-                    pass
+                    react_idx = random.randint(0,len(reactions1)-1)
+                    print("recieve /timekeeper idx={}".format(react_idx))
+                    keeper_talks.clear()
+                    keeper_talks.append(reactions1[react_idx])
                 else:
-                    detect_talks.clear()
-                    detect_talks.append(rcvmsg)
+                    print("recieve recognition text={}".format(rcvmsg))
+                    recognition_talks.clear()
+                    recognition_talks.append(rcvmsg)
 
     except Exception as e:
         print(e)

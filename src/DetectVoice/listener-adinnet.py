@@ -66,8 +66,8 @@ try:
             r_msg = struct.pack('=i', 0)
             juliusclientsock.sendall(r_msg)
             #print("#SPLIT R_MSG:{}".format(r_msg))
-            talkersock.send("/reaction".encode("UTF-8"))
-            print("send to talker for reaction.")
+            talkersock.send("/detection".encode("UTF-8"))
+            print("send to talker for detection.")
 
     r_msg = struct.pack('=i', 0)
     juliusclientsock.sendall(r_msg)

@@ -58,7 +58,7 @@ try:
                 
                 #talkersock.send(now_str.encode("UTF-8"))
                 talkersock.send('/timekeeper'.encode("UTF-8"))
-                print("send msg to talker. rcv(from talker)={} now={} delta={}".format(rcvdate,now_str,delta.seconds ))
+                print("send msg to talker for timekeep. rcv(from talker)={} now={} delta={}".format(rcvdate,now_str,delta.seconds ))
                 rcvdate.clear()
         time.sleep(1)
 
