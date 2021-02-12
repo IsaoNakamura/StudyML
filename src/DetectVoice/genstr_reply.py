@@ -23,13 +23,23 @@ try:
             buffer+=rcvmsg
             if '</RECOGOUT>\n.' in buffer:
                 recog_text = ''
+                #for line in buffer.split('\n'):
+                #    index = line.find('WORD="')
+                #    if index != -1:
+                #        line = line[index+6:line.find('"',index+6)]
+                #        recog_text = recog_text + line
+                #print("send to talker for recognition. text={}".format(recog_text))
+                #talkersock.send(recog_text.encode("UTF-8"))
+                
                 for line in buffer.split('\n'):
-                    index = line.find('WORD="')
+                    index = line.find('CLASSID="')
                     if index != -1:
-                        line = line[index+6:line.find('"',index+6)]
-                        recog_text = recog_text + line
+                        line = line[index+9:line.find('"',index+9)]
+                        if '&lt;s&gt;' not in line and '&lt;/s&gt;' not in line :
+                            recog_text = recog_text + line + ' '
                 print("send to talker for recognition. text={}".format(recog_text))
                 talkersock.send(recog_text.encode("UTF-8"))
+                
                 buffer=''
             elif '<RECOGFAIL/>\n.' in buffer:
                 print("send to talker for failed.")

@@ -32,12 +32,74 @@ again_tasks = deque()
 
 clients = []
 
+def genReplyText(recog_text):
+    reply_text = ''
+    try:
+        # 格助詞
+        #pos_case = ('や', 'で', 'より', 'から', 'へ','と','に','を','が')
+        # 終助詞
+        #pos_post = ('な', 'ぞ', 'よ', 'ね', 'な','の','か')
+        # は, が, の, と, ね, を, 
+
+        pre_text = 'そそそ、そうなんよねー。'
+        post_text = 'なんよねー。'
+        main_text = ''
+        
+        words = [ word.split('+') for word in recog_text.split(' ') ]
+        for i, cur_word in enumerate(words):
+            if(len(cur_word)>=2):
+                cur_value = cur_word[0]
+                cur_type = cur_word[1]
+                if( cur_type=='助詞'):
+                    if( (i+1) < len(words) ):
+                        next_word = words[i+1]
+                        if(len(next_word)>=2):
+                            next_value = next_word[0]
+                            next_type = next_word[1]
+                            if(next_value=='。'):
+                                # 終助詞と判定
+                                # 追加しない
+                                pass
+                            else:
+                                # 追加する
+                                main_text+=cur_value
+                                pass
+                    else:
+                        # 終助詞と判定
+                        # 追加しない
+                        pass
+                #elif( cur_type=='助動詞'):
+                #    # 追加しない
+                #    pass
+                else:
+                    # 追加する
+                    main_text+=cur_value
+        
+        reply_text = pre_text + main_text + post_text
+    except Exception as err:
+        pass
+    finally:
+        pass
+    return reply_text
+
+def test_genReplyText():
+    try:
+        recog_text = '今日+名詞 は+助詞 、+補助記号 天気+名詞 が+助詞 いい+形容詞 です+助動詞 ね+助詞 '
+        reply_text = genReplyText(recog_text)
+        print('reply_text={}'.format(reply_text))
+        pass
+    except Exception as err:
+        pass
+    finally:
+        pass
+#test_genReplyText()
+
 def talk_handler():
     try:
         while True:
             talk_text=''
             if( len(reply_tasks)>0):
-                talk_text = reply_tasks.popleft()
+                talk_text = genReplyText(reply_tasks.popleft())
                 
                 if( len(recognition_tasks)==0):
                     # 音声解析タスクがない場合
@@ -152,10 +214,11 @@ def client_handler(connection, address):
 
                 else:
                     print("recieve recognized text={}".format(rcvmsg))
-                    # 返信タスクを追加
-                    reply_tasks.append(rcvmsg)
-                    # 音声認識タスクを古いものからPOP
-                    recognition_tasks.popleft()
+                    if( len(recognition_tasks) > 0):
+                        # 返信タスクを追加
+                        reply_tasks.append(rcvmsg)
+                        # 音声認識タスクを古いものからPOP
+                        recognition_tasks.popleft()
 
     except Exception as e:
         print(e)
