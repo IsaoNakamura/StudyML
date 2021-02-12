@@ -30,7 +30,15 @@ try:
                         recog_text = recog_text + line
                 print("send to talker for recognition. text={}".format(recog_text))
                 talkersock.send(recog_text.encode("UTF-8"))
-                buffer=''         
+                buffer=''
+            elif '<RECOGFAIL/>\n.' in buffer:
+                print("send to talker for failed.")
+                talkersock.send("/recogfail".encode("UTF-8"))
+                buffer=''
+            elif '<REJECTED REASON=' in buffer:
+                print("send to talker for rejected.")
+                talkersock.send("/recogfail".encode("UTF-8"))
+                buffer=''
 
 except KeyboardInterrupt:
     print('finished')

@@ -7,8 +7,9 @@ import datetime
 from collections import deque
 
 reactions0 = ("はい？","うん？","なに？","はいよ","え？")
-reactions1 = ("うーんとね","えっとね","そうだねえ","うーん","えっとぉ","そうねえ","ちょいまち")
-reactions2 = ("うんうん","へー","ほう","なるほど","そうだねえ","そうなんだ")
+reactions1 = ("うーんとね","えっとね","うーん","そうねえ","ちょいまち")
+reactions2 = ("もういちどいって","もっかいいって","あんだってぇ？もっかいいって","ききとれなかった","なんていってるの？","わんもあぷりーず")
+reactions3 = ("うんうん","へー","ほう","なるほど","そうだねえ","そうなんだ")
 
 talk_module = "../../../aquestalkpi/AquesTalkPi"
 play_module = "aplay"
@@ -26,6 +27,8 @@ reaction_tasks = deque()
 keeper_tasks = deque()
 # 返答タスク
 reply_tasks = deque()
+# 聞き直しタスク
+again_tasks = deque()
 
 clients = []
 
@@ -54,8 +57,31 @@ def talk_handler():
                         # クライアントに通知する
                         value[0].send(now_str.encode("UTF-8"))
 
-            elif( len(reaction_tasks)>0):
+            if( len(again_tasks)>0):
+                again_tasks.popleft()
+                
+                if( len(recognition_tasks)==0):
+                    # 音声解析タスクがない場合
+                    react_idx = random.randint(0,len(reactions2)-1)
+                    talk_text = reactions2[react_idx]
 
+                    print("send to client for ask again")
+                    # 間つなぎをキャンセルさせる
+                    keeper_tasks.clear()
+                    for value in clients:
+                        # クライアントに発信する
+                        value[0].send("/cancel_timekeeper ".encode("UTF-8"))
+                else:
+                    # 音声解析タスクがある場合
+                    # 間つなぎを依頼する
+                    now = datetime.datetime.now()
+                    now_str = now.strftime(date_format)
+                    print("notification for replied. {}".format(now_str))
+                    for value in clients:
+                        # クライアントに通知する
+                        value[0].send(now_str.encode("UTF-8"))
+
+            elif( len(reaction_tasks)>0):
                 reaction_tasks.popleft()
                 react_idx = random.randint(0,len(reactions0)-1)
                 talk_text = reactions0[react_idx]
@@ -116,6 +142,13 @@ def client_handler(connection, address):
                     print("recieve /timekeeper {}".format(now_str))
                     # 間つなぎタスクを追加
                     keeper_tasks.append(now_str)
+
+                elif( '/recogfail' in rcvmsg):
+                    print("recieve /recogfail {}".format(now_str))
+                    # 聞き直しタスクを追加
+                    again_tasks.append(now_str)
+                    # 音声認識タスクを古いものからPOP
+                    recognition_tasks.popleft()
 
                 else:
                     print("recieve recognized text={}".format(rcvmsg))
