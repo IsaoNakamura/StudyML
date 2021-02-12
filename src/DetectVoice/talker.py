@@ -4,6 +4,7 @@ import subprocess
 import threading
 import random
 import datetime
+from collections import deque
 
 reactions0 = ("はい？","うん？","なに？","はいよ","え？")
 reactions1 = ("うーんとね","えっとね","そうだねえ","うーん","えっとぉ","そうねえ","ちょいまち")
@@ -17,9 +18,14 @@ talkserver_port = 5533
 
 date_format = '%Y/%m/%d %H:%M:%S'
 
-detection_talks = []
-keeper_talks = []
-recognition_talks = []
+# 音声解析タスク
+recognition_tasks = deque()
+# リアクションタスク
+reaction_tasks = deque()
+# 間つなぎタスク
+keeper_tasks = deque()
+# 返答タスク
+reply_tasks = deque()
 
 clients = []
 
@@ -27,47 +33,53 @@ def talk_handler():
     try:
         while True:
             talk_text=''
-            if( len(recognition_talks)>0):
-                talk_text = recognition_talks.pop()
+            if( len(reply_tasks)>0):
+                talk_text = reply_tasks.popleft()
                 
+                if( len(recognition_tasks)==0):
+                    # 音声解析タスクがない場合
+                    print("send to client for cancel timekeeper")
+                    # 間つなぎをキャンセルさせる
+                    keeper_tasks.clear()
+                    for value in clients:
+                        # クライアントに発信する
+                        value[0].send("/cancel_timekeeper ".encode("UTF-8"))
+                else:
+                    # 音声解析タスクがある場合
+                    # 間つなぎを依頼する
+                    now = datetime.datetime.now()
+                    now_str = now.strftime(date_format)
+                    print("notification for replied. {}".format(now_str))
+                    for value in clients:
+                        # クライアントに通知する
+                        value[0].send(now_str.encode("UTF-8"))
+
+            elif( len(reaction_tasks)>0):
+
+                reaction_tasks.popleft()
+                react_idx = random.randint(0,len(reactions0)-1)
+                talk_text = reactions0[react_idx]
+               
                 now = datetime.datetime.now()
                 now_str = now.strftime(date_format)
-                print("notification for recognition. {}".format(now_str))
+                print("notification for reacted. {}".format(now_str))
                 for value in clients:
-                    # クライアントに発信する
-                    value[0].send("/cancel ".encode("UTF-8"))
-                    pass
-
-                recognition_talks.clear()
-                detection_talks.clear()
-                keeper_talks.clear()
-
-            if( len(detection_talks)>0):
-                talk_text = detection_talks.pop()
-                
-                now = datetime.datetime.now()
-                now_str = now.strftime(date_format)
-                print("notification for detection. {}".format(now_str))
-                for value in clients:
-                    # クライアントに発信する
+                    # クライアントに通知する
                     value[0].send(now_str.encode("UTF-8"))
                     pass
 
-                detection_talks.clear()
-                keeper_talks.clear()
-
-            if( len(keeper_talks)>0):
-                talk_text = keeper_talks.pop()
+            elif( len(keeper_tasks)>0):
+                keeper_tasks.popleft()
+                react_idx = random.randint(0,len(reactions1)-1)
+                talk_text = reactions1[react_idx]
 
                 now = datetime.datetime.now()
                 now_str = now.strftime(date_format)
                 print("notification for keeper. {}".format(now_str))
                 for value in clients:
-                    # クライアントに発信する
+                    # クライアントに通知する
                     value[0].send(now_str.encode("UTF-8"))
                     pass
-
-                keeper_talks.clear()
 
             if(len(talk_text)>0):
                 cmd1 = talk_module + " " + talk_text
@@ -88,20 +100,29 @@ def client_handler(connection, address):
             #クライアント側から受信する
             rcvmsg = str(connection.recv(4096).decode('utf-8'))
             if len(rcvmsg)>0:
+                now = datetime.datetime.now()
+                now_str = now.strftime(date_format)
                 if( '/detection' in rcvmsg):
-                    react_idx = random.randint(0,len(reactions0)-1)
-                    print("recieve /detection idx={}".format(react_idx))
-                    detection_talks.clear()
-                    detection_talks.append(reactions0[react_idx])
+                    # マイクから音を検出した場合
+                    print("recieve /detection {}".format(now_str))
+                    
+                    # 音声認識タスクを追加
+                    recognition_tasks.append(now_str)
+
+                    # リアクションタスクを追加
+                    reaction_tasks.append(now_str)
+
                 elif( '/timekeeper' in rcvmsg):
-                    react_idx = random.randint(0,len(reactions1)-1)
-                    print("recieve /timekeeper idx={}".format(react_idx))
-                    keeper_talks.clear()
-                    keeper_talks.append(reactions1[react_idx])
+                    print("recieve /timekeeper {}".format(now_str))
+                    # 間つなぎタスクを追加
+                    keeper_tasks.append(now_str)
+
                 else:
-                    print("recieve recognition text={}".format(rcvmsg))
-                    recognition_talks.clear()
-                    recognition_talks.append(rcvmsg)
+                    print("recieve recognized text={}".format(rcvmsg))
+                    # 返信タスクを追加
+                    reply_tasks.append(rcvmsg)
+                    # 音声認識タスクを古いものからPOP
+                    recognition_tasks.popleft()
 
     except Exception as e:
         print(e)

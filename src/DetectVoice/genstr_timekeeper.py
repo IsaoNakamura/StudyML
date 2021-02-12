@@ -21,9 +21,9 @@ def recv_handler(sock):
             rcvmsg = sock.recv(4096)
             if len(rcvmsg)>0:
                 rcvstr = str(rcvmsg.decode('utf-8'))
-                if( '/cancel' in rcvstr):
+                if( '/cancel_timekeeper' in rcvstr):
                     rcvdate.clear()
-                    print("recv from talker for cancel.")
+                    print("recv from talker for cancel_timekeeper.")
                     pass
                 else:
                     #print("読み込んだバイト数:({})".format(len(rcvmsg)))
