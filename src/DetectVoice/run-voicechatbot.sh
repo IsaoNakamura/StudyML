@@ -15,7 +15,7 @@ dictationkit_path=../../../dictation-kit
 #python3 ./genstr_reply.py &
 #sleep 1
 #python3 ./listener.py dnnclient.conf &
-#python3 ./listener-adinnet.py listener-adinnet.conf &
+#python3 ./listener-adinsvr.py listener-adinsvr.conf &
 #sleep 1
 #adintool -in mic -out vecnet -server 127.0.0.1 -paramtype FBANK_D_A_Z -veclen 120 -htkconf $dictationkit_path/model/dnn/config.lmfb -port 5532 -cvn -cmnload $dictationkit_path/model/dnn/norm -cmnnoupdate
 
