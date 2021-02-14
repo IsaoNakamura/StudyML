@@ -133,16 +133,16 @@ def talk_handler():
 
             elif( len(again_tasks)>0):
                 again_tasks.popleft()
+                #again_tasks.clear()
                 react_idx = random.randint(0,len(reactions2)-1)
                 talk_text = reactions2[react_idx]
                 print("send to client for ask again")
 
                 # 音声認識タスクを古いものからPOP
-                recognition_tasks.popleft()
-
-                #again_tasks.clear()
-                # 音声解析タスクをクリアする
-                #recognition_tasks.clear()
+                if(len(recognition_tasks)>0):
+                    recognition_tasks.popleft()
+                    # 音声解析タスクをクリアする
+                    #recognition_tasks.clear()
 
                 # 間つなぎをキャンセルさせる
                 keeper_tasks.clear()
@@ -220,9 +220,10 @@ def client_handler(connection, address):
 
                 else:
                     print("recieve recognized text={}".format(rcvmsg))
-                    # 返信タスクを追加
-                    reply_tasks.append(rcvmsg)
-                    #if( len(recognition_tasks) > 0):
+
+                    if( len(recognition_tasks) > 0):
+                        # 返信タスクを追加
+                        reply_tasks.append(rcvmsg)
                     #else:
                     #    reply_tasks.clear()
 
