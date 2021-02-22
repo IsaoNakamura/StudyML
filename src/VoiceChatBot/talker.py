@@ -1,4 +1,5 @@
 import sys
+import os
 import socket
 import subprocess
 import threading
@@ -8,11 +9,28 @@ from collections import deque
 
 reactions0 = ("はい？","うん？","なに？","はいよ","え？")
 reactions1 = ("うーんとね","えっとね","うーん","そうねえ","ちょいまち")
-reactions2 = ("もういちどいって","もっかいいって","あんだってぇ？もっかいいって","ききとれなかった","なんていってるの？","わんもあぷりーず")
+reactions2 = ("もういちどいって","もっかいいって","あんだってぇ？、もっかいいって","ききとれなかった","なんていってるの？","わんもあぷりーず")
 reactions3 = ("うんうん","へー","ほう","なるほど","そうだねえ","そうなんだ")
 
-talk_module = "../../../aquestalkpi/AquesTalkPi"
+replies0 = (
+        ("そそそ、そうなんよねー。","、なんよねー。"), 
+        ("これこれ、こういう。","、ということ。"),
+        ("それな。","、まじ、それな。"),
+        ("うける。","、まじ、うける。"),
+        ("かわいい。","、まじ、かわいい。"),
+    )
+
+# cwd_str = os.getcwd()
+module_dir = os.path.dirname(__file__)
+
+talk_module = module_dir + "/" + "../../../aquestalkpi/AquesTalkPi"
 play_module = "aplay"
+
+python_module = 'python3'
+
+deliverer_module = module_dir + "/deliverer-juliuscli.py"
+listener_module = module_dir + "/listener-adinsvr.py"
+timefiller_module = module_dir + "/timefiller.py"
 
 talkserver_host = 'localhost'
 talkserver_port = 5533
@@ -41,8 +59,12 @@ def genReplyText(recog_text):
         #pos_post = ('な', 'ぞ', 'よ', 'ね', 'な','の','か')
         # は, が, の, と, ね, を, 
 
-        pre_text = 'そそそ、そうなんよねー。'
-        post_text = 'なんよねー。'
+        # pre_text = 'そそそ、そうなんよねー。'
+        # post_text = 'なんよねー。'
+
+        reply_idx = random.randint(0,len(replies0)-1)
+        pre_text = replies0[reply_idx][0]
+        post_text = replies0[reply_idx][1]
         main_text = ''
         
         words = [ word.split('+') for word in recog_text.split(' ') ]
@@ -230,6 +252,13 @@ def client_handler(connection, address):
     except Exception as e:
         print(e)
 
+deliverer_cmd = python_module + " " + deliverer_module
+timefiller_cmd = python_module + " " + timefiller_module
+listener_cmd = python_module + " " + listener_module + " " + module_dir + "/listener-adinsvr.conf"
+
+deliverer_proc = None
+listener_proc = None
+timefiller_proc = None
 
 talkserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
@@ -242,6 +271,11 @@ try:
     # スレッドスタート
     talk_thread.start()
 
+    # サブプロセススタート
+    deliverer_proc=subprocess.Popen(deliverer_cmd.split(),stdin=None,stdout=None)
+    listener_proc=subprocess.Popen(listener_cmd.split(),stdin=None,stdout=None)
+    timefiller_proc = subprocess.Popen(timefiller_cmd.split(),stdin=None,stdout=None)
+
     while True:
         try:
             # 接続要求を受信
@@ -252,9 +286,8 @@ try:
             exit()
             break
         # アドレス確認
-        print("[アクセス元アドレス]=>{}".format(addr[0]))
-        print("[アクセス元ポート]=>{}".format(addr[1]))
-        print("\r\n")
+        print("connected from ip={} port={}".format(addr[0], addr[1]))
+
         # 待受中にアクセスしてきたクライアントを追加
         clients.append((conn, addr))
         # スレッド作成
@@ -266,3 +299,10 @@ except KeyboardInterrupt:
     print('finished')
     talkserversock.send("DIE".encode('utf-8'))
     talkserversock.close()
+    if(deliverer_proc is not None):
+        deliverer_proc.kill()
+    if(listener_proc is not None):
+        listener_proc.kill()
+    if(timefiller_proc is not None):
+        timefiller_proc.kill()
+    
