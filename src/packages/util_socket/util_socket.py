@@ -1,7 +1,7 @@
 import socket
 import time
 
-def connectSocket(socket, host, port):
+def connectSocket(socket, host, port) -> int:
     result = -1
     try:
         socket.connect((host,port))
@@ -12,7 +12,7 @@ def connectSocket(socket, host, port):
         pass
     return result
 
-def connectSocketRetry(socket, host, port, retrycnt=10, retryinterval_sec=1):
+def connectSocketRetry(socket:None, host:str, port:int, retrycnt:int=10, retryinterval_sec:float=1.0) -> int:
     result = -1
     try:
         retry=0

@@ -12,6 +12,7 @@ src_dirpath = '/'.join(src_dirlist)
 sys.path.append(src_dirpath)
 
 import socket
+import signal
 from packages.util_socket import util_socket
 
 juliusserver_host = 'localhost'
@@ -20,13 +21,26 @@ juliusserver_port = 10500
 talker_host =  'localhost'
 talker_port = 5533
 
+def sig_handler(signum, frame) -> None:
+    sys.exit(1)
+
 def main():
     result = -1
-    juliusserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    talkersock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    juliusserversock = None
+    talkersock = None
 
     try:
-        if( util_socket.connectSocketRetry(juliusserversock, juliusserver_host, juliusserver_port) != 0):
+        signal.signal(signal.SIGTERM, sig_handler)
+
+        juliusserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if( juliusserversock is None ):
+            return result
+
+        talkersock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if( talkersock is None ):
+            return result
+
+        if( util_socket.connectSocketRetry(juliusserversock, juliusserver_host, juliusserver_port,100) != 0):
             return result
         if( util_socket.connectSocketRetry(talkersock, talker_host, talker_host) != 0):
             return result
@@ -64,15 +78,28 @@ def main():
                     print("send to talker for rejected.")
                     talkersock.send("/recogfail".encode("UTF-8"))
                     buffer=''
-
     except KeyboardInterrupt:
-        print('finished')
-        juliusserversock.send("DIE".encode('utf-8'))
-        juliusserversock.close()
-        #talkersock.send("DIE".encode('utf-8'))
-        talkersock.close()
-    
+        # Ctrl+Cやプロセスkillで止められるのが前提
+        result = 0
+    except Exception as e:
+        print(e)
+    finally:
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+        if(talkersock is not None):
+            talkersock.close()
+        if(juliusserversock is not None):
+            #juliusserversock.send("DIE".encode('utf-8'))
+            juliusserversock.close()
+        if(result!=0):
+            pass
+
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
     return result
 
 if __name__ == '__main__':
-    main()
+    sys.exit(abs(main()))
+
+    
