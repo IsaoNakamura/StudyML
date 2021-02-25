@@ -5,6 +5,7 @@ import subprocess
 import threading
 import random
 import datetime
+import time
 from collections import deque
 
 reactions0 = ("はい？","うん？","なに？","はいよ","え？")
@@ -31,6 +32,10 @@ python_module = 'python3'
 deliverer_module = module_dir + "/deliverer-juliuscli.py"
 listener_module = module_dir + "/listener-adinsvr.py"
 timefiller_module = module_dir + "/timefiller.py"
+
+deliverer_cmd = python_module + " " + deliverer_module
+timefiller_cmd = python_module + " " + timefiller_module
+listener_cmd = python_module + " " + listener_module + " " + module_dir + "/listener-adinsvr.conf"
 
 talkserver_host = 'localhost'
 talkserver_port = 5533
@@ -252,57 +257,56 @@ def client_handler(connection, address):
     except Exception as e:
         print(e)
 
-deliverer_cmd = python_module + " " + deliverer_module
-timefiller_cmd = python_module + " " + timefiller_module
-listener_cmd = python_module + " " + listener_module + " " + module_dir + "/listener-adinsvr.conf"
+def main():
+    deliverer_proc = None
+    listener_proc = None
+    timefiller_proc = None
 
-deliverer_proc = None
-listener_proc = None
-timefiller_proc = None
+    talkserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        talkserversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        talkserversock.bind((talkserver_host, talkserver_port))
+        talkserversock.listen(1)
 
-talkserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-try:
-    talkserversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    talkserversock.bind((talkserver_host, talkserver_port))
-    talkserversock.listen(1)
-
-    # スレッド作成
-    talk_thread = threading.Thread(target=talk_handler, daemon=True)
-    # スレッドスタート
-    talk_thread.start()
-
-    # サブプロセススタート
-    deliverer_proc=subprocess.Popen(deliverer_cmd.split(),stdin=None,stdout=None)
-    listener_proc=subprocess.Popen(listener_cmd.split(),stdin=None,stdout=None)
-    timefiller_proc = subprocess.Popen(timefiller_cmd.split(),stdin=None,stdout=None)
-
-    while True:
-        try:
-            # 接続要求を受信
-            conn, addr = talkserversock.accept()
-
-        except KeyboardInterrupt:
-            talkserversock.close()
-            exit()
-            break
-        # アドレス確認
-        print("connected from ip={} port={}".format(addr[0], addr[1]))
-
-        # 待受中にアクセスしてきたクライアントを追加
-        clients.append((conn, addr))
         # スレッド作成
-        client_thread = threading.Thread(target=client_handler, args=(conn, addr), daemon=True)
+        talk_thread = threading.Thread(target=talk_handler, daemon=True)
         # スレッドスタート
-        client_thread.start()
+        talk_thread.start()
 
-except KeyboardInterrupt:
-    print('finished')
-    talkserversock.send("DIE".encode('utf-8'))
-    talkserversock.close()
-    if(deliverer_proc is not None):
-        deliverer_proc.kill()
-    if(listener_proc is not None):
-        listener_proc.kill()
-    if(timefiller_proc is not None):
-        timefiller_proc.kill()
+        # サブプロセススタート
+        deliverer_proc=subprocess.Popen(deliverer_cmd.split(),stdin=None,stdout=None)
+        listener_proc=subprocess.Popen(listener_cmd.split(),stdin=None,stdout=None)
+        timefiller_proc = subprocess.Popen(timefiller_cmd.split(),stdin=None,stdout=None)
+
+        while True:
+            try:
+                # 接続要求を受信
+                conn, addr = talkserversock.accept()
+
+            except KeyboardInterrupt:
+                talkserversock.close()
+                exit()
+                break
+            # アドレス確認
+            print("connected from ip={} port={}".format(addr[0], addr[1]))
+
+            # 待受中にアクセスしてきたクライアントを追加
+            clients.append((conn, addr))
+            # スレッド作成
+            client_thread = threading.Thread(target=client_handler, args=(conn, addr), daemon=True)
+            # スレッドスタート
+            client_thread.start()
+
+    except KeyboardInterrupt:
+        print('finished')
+        if(deliverer_proc is not None):
+            deliverer_proc.kill()
+        if(listener_proc is not None):
+            listener_proc.kill()
+        if(timefiller_proc is not None):
+            timefiller_proc.kill()
+        talkserversock.send("DIE".encode('utf-8'))
+        talkserversock.close()
     
+if __name__ == '__main__':
+    main()
