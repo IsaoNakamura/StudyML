@@ -12,8 +12,8 @@ src_dirpath = '/'.join(src_dirlist)
 sys.path.append(src_dirpath)
 
 import socket
-import signal
 from packages.util_socket import util_socket
+from packages.util_signal import util_signal
 
 juliusserver_host = 'localhost'
 juliusserver_port = 10500
@@ -21,16 +21,13 @@ juliusserver_port = 10500
 talker_host =  'localhost'
 talker_port = 5533
 
-def sig_handler(signum, frame) -> None:
-    sys.exit(1)
-
 def main():
     result = -1
     juliusserversock = None
     talkersock = None
 
     try:
-        signal.signal(signal.SIGTERM, sig_handler)
+        util_signal.set_killtrap_handler()
 
         juliusserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if( juliusserversock is None ):
@@ -79,14 +76,14 @@ def main():
                     talkersock.send("/recogfail".encode("UTF-8"))
                     buffer=''
     except KeyboardInterrupt:
-        # Ctrl+Cやプロセスkillで止められるのが前提
+        # Ctrl+Cで止められるのが前提
+        # print("{} : except KeyboardInterrupt.".format(os.path.basename(__file__)))
         result = 0
     except Exception as e:
         print(e)
     finally:
-        signal.signal(signal.SIGTERM, signal.SIG_IGN)
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-
+        util_signal.set_killtrap_finallybeg()
+        # print("{} : finally beg.".format(os.path.basename(__file__)))
         if(talkersock is not None):
             talkersock.close()
         if(juliusserversock is not None):
@@ -94,9 +91,8 @@ def main():
             juliusserversock.close()
         if(result!=0):
             pass
-
-        signal.signal(signal.SIGTERM, signal.SIG_DFL)
-        signal.signal(signal.SIGINT, signal.SIG_DFL)
+        # print("{} : finally end.".format(os.path.basename(__file__)))
+        util_signal.set_killtrap_finallyend()
     return result
 
 if __name__ == '__main__':

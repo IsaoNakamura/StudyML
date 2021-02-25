@@ -5,7 +5,7 @@ import subprocess
 import threading
 import random
 import datetime
-import time
+import signal
 from collections import deque
 
 reactions0 = ("はい？","うん？","なに？","はいよ","え？")
@@ -258,12 +258,14 @@ def client_handler(connection, address):
         print(e)
 
 def main():
+    result = -1
     deliverer_proc = None
     listener_proc = None
     timefiller_proc = None
 
-    talkserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    talkserversock = None
     try:
+        talkserversock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         talkserversock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         talkserversock.bind((talkserver_host, talkserver_port))
         talkserversock.listen(1)
@@ -299,6 +301,13 @@ def main():
 
     except KeyboardInterrupt:
         print('finished')
+
+    except Exception as e:
+        print(e)
+    finally:
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+
         if(deliverer_proc is not None):
             deliverer_proc.kill()
         if(listener_proc is not None):
@@ -307,6 +316,13 @@ def main():
             timefiller_proc.kill()
         talkserversock.send("DIE".encode('utf-8'))
         talkserversock.close()
+
+        if(result!=0):
+            pass
+
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
+    return result
     
 if __name__ == '__main__':
-    main()
+    sys.exit(abs(main()))
