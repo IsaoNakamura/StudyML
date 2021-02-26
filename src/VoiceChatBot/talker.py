@@ -8,8 +8,11 @@ import datetime
 import time
 from collections import deque
 
+# 自作signalユーティリティモジュールを参照
 sys.path.append('./src')
 from packages.util_signal import util_signal
+
+
 
 _modulename = os.path.basename(__file__)
 
@@ -92,9 +95,12 @@ class Talker:
 
         self.talker_sock = None
 
+        self.talk_thread = None
+        self.talk_alive = True
+
     def __del__(self):
         util_signal.set_killtrap_finallybeg()
-        print("{} : finally beg.".format(_modulename))
+        print("{} : del beg.".format(_modulename))
 
         # 後始末処理
         if(self.deliverer_proc is not None):
@@ -109,7 +115,7 @@ class Talker:
             #self.talker_sock.send("DIE".encode('utf-8'))
             self.talker_sock.close()
 
-        print("{} : finally end.".format(_modulename))
+        print("{} : del end.".format(_modulename))
         util_signal.set_killtrap_finallyend()
 
     def genReplyText(self, recog_text):
@@ -171,7 +177,7 @@ class Talker:
     def talk_handler(self):
         result = -1
         try:
-            while True:
+            while self.talk_alive:
                 talk_text=''
                 if( len(self.reply_tasks)>0):
                     if( len(self.recognition_tasks)>0):
@@ -323,14 +329,14 @@ class Talker:
             self.talker_sock.listen(1)
 
             # スレッド作成
-            talk_thread = threading.Thread(target=self.talk_handler, daemon=True)
+            self.talk_thread = threading.Thread(target=self.talk_handler, daemon=True)
             # スレッドスタート
-            talk_thread.start()
+            self.talk_thread.start()
 
             # サブプロセススタート
-            #self.deliverer_proc = subprocess.Popen(deliverer_cmd.split(),stdin=None,stdout=None)
-            #self.listener_proc = subprocess.Popen(listener_cmd.split(),stdin=None,stdout=None)
-            # self.timefiller_proc = subprocess.Popen(timefiller_cmd.split(),stdin=None,stdout=None)
+            self.deliverer_proc = subprocess.Popen(deliverer_cmd.split(),stdin=None,stdout=None)
+            self.listener_proc = subprocess.Popen(listener_cmd.split(),stdin=None,stdout=None)
+            self.timefiller_proc = subprocess.Popen(timefiller_cmd.split(),stdin=None,stdout=None)
 
             while True:
                 # 接続要求を受信
@@ -346,10 +352,11 @@ class Talker:
 
         except KeyboardInterrupt:
             print("{} : except KeyboardInterrupt. ".format(_modulename))
-            # sys.exit()
         except Exception as e:
             print("{} : except Exception. except={}".format(_modulename, e))
         finally:
+            self.talk_alive = False
+            self.talk_thread.join()
             if(result!=0):
                 pass
         return result

@@ -39,7 +39,7 @@ class DelivererJuliusCli:
         """デストラクタ"""
 
         util_signal.set_killtrap_finallybeg()
-        print("{} : finally beg.".format(_modulename))
+        print("{} : del beg.".format(_modulename))
 
         if(self.talker_sock is not None):
             self.talker_sock.close()
@@ -47,7 +47,7 @@ class DelivererJuliusCli:
             #juliusserversock.send("DIE".encode('utf-8'))
             self.juliusmodule_sock.close()
 
-        print("{} : finally end.".format(_modulename))
+        print("{} : del end.".format(_modulename))
         util_signal.set_killtrap_finallyend()
 
     def run_main(self):
