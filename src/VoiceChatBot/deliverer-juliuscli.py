@@ -1,5 +1,7 @@
 import sys
 import os
+_modulename = os.path.basename(__file__)
+
 # sys.path.append('./src')
 # module_dirpath = /home/pi/GitHub/StudyML/src/VoiceChatBot
 # srcディレクトリ内に自作モジュールが格納されている
@@ -24,7 +26,7 @@ class DelivererJuliusCli:
         , _talker_port:int=5533
     ):
         """コンストラクタ"""
-        print("init. : {}".format(os.path.basename(__file__)))
+        print("{} : init.".format(_modulename))
         util_signal.set_killtrap_handler()
         self.juliusmodule_host = _juliusmodule_host
         self.juliusmodule_port = _juliusmodule_port
@@ -35,10 +37,9 @@ class DelivererJuliusCli:
     
     def __del__(self):
         """デストラクタ"""
-        print("del. : {}".format(os.path.basename(__file__)))
-        
+
         util_signal.set_killtrap_finallybeg()
-        print("finally beg. : {}".format(os.path.basename(__file__)))
+        print("{} : finally beg.".format(_modulename))
 
         if(self.talker_sock is not None):
             self.talker_sock.close()
@@ -46,7 +47,7 @@ class DelivererJuliusCli:
             #juliusserversock.send("DIE".encode('utf-8'))
             self.juliusmodule_sock.close()
 
-        print("finally end. : {}".format(os.path.basename(__file__)))
+        print("{} : finally end.".format(_modulename))
         util_signal.set_killtrap_finallyend()
 
     def run_main(self):
@@ -60,7 +61,7 @@ class DelivererJuliusCli:
             if( self.talker_sock is None ):
                 return result
 
-            if( util_socket.connectSocketRetry(self.juliusmodule_sock, self.juliusmodule_host, self.juliusmodule_port, 1) != 0):
+            if( util_socket.connectSocketRetry(self.juliusmodule_sock, self.juliusmodule_host, self.juliusmodule_port) != 0):
                 return result
             if( util_socket.connectSocketRetry(self.talker_sock, self.talker_host, self.talker_port) != 0):
                 return result
@@ -100,10 +101,10 @@ class DelivererJuliusCli:
                         buffer=''
         except KeyboardInterrupt:
             # Ctrl+Cで止められるのが前提
-            print("except KeyboardInterrupt. : {}".format(os.path.basename(__file__)))
+            print("{} : except KeyboardInterrupt.".format(_modulename))
             result = 0
         except Exception as e:
-            print("except Exception. :{} {}".format(os.path.basename(__file__), e))
+            print("{} : except Exception. except={}".format(_modulename, e))
         finally:
             if(result!=0):
                 pass

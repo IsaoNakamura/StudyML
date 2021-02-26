@@ -5,6 +5,8 @@ import struct
 import subprocess
 # import time
 
+_modulename = os.path.basename(__file__)
+
 talker_host =  'localhost'
 talker_port = 5533
 adinserver_host = 'localhost'
@@ -100,7 +102,7 @@ try:
     adinclientsock.close()
 
 except KeyboardInterrupt:
-    print('finished')
+    print("{} : except KeyboardInterrupt. ".format(_modulename))
     juliusclientsock.close()
     adinserversock.close()
     talkersock.close()
