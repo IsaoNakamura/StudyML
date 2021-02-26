@@ -88,6 +88,9 @@ class Talker:
         self.again_tasks = deque()
 
         self.clients = []
+        self.client_thread = None
+        self.client_alive = True
+
         self.julius_proc = None
         self.deliverer_proc = None
         self.listener_proc = None
@@ -264,6 +267,7 @@ class Talker:
                     ##process2=subprocess.Popen(cmd2.split(),stdin=process1.stdout)
                     process2=subprocess.run(cmd2.split(),stdin=process1.stdout)
                     print(cmd1.split())
+            print("{} : talk_handler end. ".format(_modulename))
         except KeyboardInterrupt:
             # Ctrl+Cで止められるのが前提
             print("{} : talk_handler except KeyboardInterrupt.".format(_modulename))
@@ -278,7 +282,7 @@ class Talker:
     # 接続済みクライアントは読み込みおよび書き込みを繰り返す
     def client_handler(self, connection, address):
         try:
-            while True:
+            while self.client_alive:
                 #クライアント側から受信する
                 rcvmsg = str(connection.recv(4096).decode('utf-8'))
                 if len(rcvmsg)>0:
@@ -312,7 +316,7 @@ class Talker:
                             self.reply_tasks.append(rcvmsg)
                         #else:
                         #    reply_tasks.clear()
-
+            print("{} : client_handler end. ".format(_modulename))
         except Exception as e:
             print(e)
 
@@ -342,13 +346,13 @@ class Talker:
                 # 接続要求を受信
                 conn, addr = self.talker_sock.accept()
                 # アドレス確認
-                print("connected from ip={} port={}".format(addr[0], addr[1]))
+                print("{} : connected from ip={} port={}".format(_modulename, addr[0], addr[1]))
                 # 待受中にアクセスしてきたクライアントを追加
                 self.clients.append((conn, addr))
                 # スレッド作成
-                client_thread = threading.Thread(target=self.client_handler, args=(conn, addr), daemon=True)
+                self.client_thread = threading.Thread(target=self.client_handler, args=(conn, addr), daemon=True)
                 # スレッドスタート
-                client_thread.start()
+                self.client_thread.start()
 
         except KeyboardInterrupt:
             print("{} : except KeyboardInterrupt. ".format(_modulename))
@@ -357,6 +361,8 @@ class Talker:
         finally:
             self.talk_alive = False
             self.talk_thread.join()
+            self.client_alive = False
+            self.client_thread.join()
             if(result!=0):
                 pass
         return result
