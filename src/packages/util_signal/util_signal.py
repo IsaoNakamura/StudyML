@@ -11,7 +11,15 @@ def killtrap_handler(signum, frame) -> None:
 
 def set_killtrap_handler() -> None:
    signal.signal(signal.SIGTERM, killtrap_handler)
- 
+
+def pause_kill() -> None:
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
+def resume_kill() -> None:
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 def set_killtrap_finallybeg() -> None:
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -23,34 +31,41 @@ def set_killtrap_finallyend() -> None:
 # 自作signalユーティリティモジュールを参照
 sys.path.append('./src')
 from packages.util_signal import util_signal
-class Hoge:
+
+class TestUtilSignal():
     # コンストラクタ
     def __init__(self):
         print("{} : init.".format(_modulename))
         util_signal.set_killtrap_handler()
         # 初期化処理
-        self.hoge_thread = None
-        self.hoge_alive = True
+        self.subthread = None
+        self.subthread_alive = True
     # デストラクタ
     def __del__(self):
-        util_signal.set_killtrap_finallybeg()
-        print("{} : del beg.".format(_modulename))
-        # 後始末処理
-        print("{} : del end.".format(_modulename))
-        util_signal.set_killtrap_finallyend()
+        try:
+            print("{} : del beg.".format(_modulename))
+            util_signal.pause_kill()
+            # 後始末処理
+        finally:
+            util_signal.resume_kill()
+            print("{} : del end.".format(_modulename))
+
     # スレッドハンドラ
-    def hoge_handler(self):
-        while self.hoge_alive:
+    def subthread_handler(self):
+        while self.subthread_alive:
             pass
+        print("subthread is end.")
     # メイン処理実行
-    def run_main(self):
+    def run_test(self):
         result = -1
         try:
             # スレッドをdaemonとして作成
-            self.hoge_thread = threading.Thread(target=self.hoge_handler, daemon=True)
+            self.subthread = threading.Thread(target=self.subthread_handler, daemon=True)
             # スレッドスタート
-            self.hoge_thread.start()
+            self.subthread.start()
+            print("{} : subthread started. ".format(_modulename))
             # メインループ
+            print("{} : mainthread-roop starting. ".format(_modulename))
             while True:
                 pass
         except KeyboardInterrupt:
@@ -60,9 +75,9 @@ class Hoge:
         finally:
             print("{} : finally beg.".format(_modulename))
             # スレッドのループを終了させるフラグをOFFにする
-            self.hoge_alive = False
+            self.subthread_alive = False
             # スレッドをジョインさせる
-            self.hoge_thread.join()
+            self.subthread.join()
             if(result!=0):
                 pass
             print("{} : finally end.".format(_modulename))
@@ -70,4 +85,4 @@ class Hoge:
 
 if __name__ == '__main__':
     # エントリポイント
-    sys.exit(Hoge().run_main())
+    sys.exit(TestUtilSignal().run_test())

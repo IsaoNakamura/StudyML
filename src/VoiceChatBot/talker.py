@@ -349,10 +349,11 @@ class Talker:
                 print("{} : connected from ip={} port={}".format(_modulename, addr[0], addr[1]))
                 # 待受中にアクセスしてきたクライアントを追加
                 self.clients.append((conn, addr))
-                # スレッド作成
-                self.client_thread = threading.Thread(target=self.client_handler, args=(conn, addr), daemon=True)
-                # スレッドスタート
-                self.client_thread.start()
+                if self.client_thread is None:
+                    # スレッド作成
+                    self.client_thread = threading.Thread(target=self.client_handler, args=(conn, addr), daemon=True)
+                    # スレッドスタート
+                    self.client_thread.start()
 
         except KeyboardInterrupt:
             print("{} : except KeyboardInterrupt. ".format(_modulename))
@@ -362,7 +363,8 @@ class Talker:
             self.talk_alive = False
             self.talk_thread.join()
             self.client_alive = False
-            self.client_thread.join()
+            if self.client_thread is not None:
+                self.client_thread.join()
             if(result!=0):
                 pass
         return result
